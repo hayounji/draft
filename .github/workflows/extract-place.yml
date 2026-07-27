@@ -1,0 +1,33 @@
+name: Extract SNS places
+
+on:
+  workflow_dispatch:
+    inputs:
+      sns_url:
+        description: Public SNS post URL to extract
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      SNS_URL: ${{ inputs.sns_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run place -- extract "$SNS_URL" --out places.json
+      - run: npm run place -- validate places.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: places-json
+          path: places.json
+          if-no-files-found: error

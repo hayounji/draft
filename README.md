@@ -21,6 +21,10 @@ npm run place -- save-naver examples/places.json --confirm
 
 `extract`에는 `OPENAI_API_KEY`가 필요하며 API 사용 비용이 발생할 수 있습니다. 이 명령은 사용자가 제출한 URL의 로그인 없는 공개 정보만 읽도록 요청합니다. 비공개·로그인 요구·차단 페이지는 우회하지 않으며, 추출 결과가 없거나 모호하면 빈 결과 또는 `검토 필요`로 남습니다. `save-naver`는 `--confirm`이 없으면 실패합니다. `NAVER_USER_DATA_DIR`에는 이미 네이버에 로그인한 전용 로컬 Chrome 프로필의 절대 경로를 넣으세요. 비밀번호·API 키·프로필 경로가 담긴 `.env`는 Git에 커밋하지 마세요.
 
+## GitHub에서 실행하기
+
+GitHub 저장소의 **Settings → Secrets and variables → Actions → New repository secret**에서 `OPENAI_API_KEY`를 추가합니다. 그다음 **Actions → Extract SNS places → Run workflow**를 열고 `sns_url`에 공개 SNS 링크를 붙여 넣어 실행합니다. 완료된 실행 화면의 **Artifacts**에서 `places-json`을 내려받으면 추출된 `places.json`을 받을 수 있습니다. API 키는 Actions 로그나 소스 코드에 표시되지 않습니다.
+
 ## 입력 JSON
 
 최상위 배열 또는 `{ "places": [...] }` 형식을 지원합니다.
