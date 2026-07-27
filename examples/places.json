@@ -1,0 +1,10 @@
+[
+  {
+    "name": "예시 카페",
+    "sourceUrl": "https://example.com/source",
+    "region": "서울 성수동",
+    "majorCategory": "음식",
+    "primaryCategory": "카페",
+    "secondaryCategory": "커피"
+  }
+]

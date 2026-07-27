@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.env
+.naver-profile/
+playwright-report/
+test-results/
