@@ -15,7 +15,7 @@ jobs:
   extract:
     runs-on: ubuntu-latest
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       SNS_URL: ${{ inputs.sns_url }}
     steps:
       - uses: actions/checkout@v4

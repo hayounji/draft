@@ -4,7 +4,7 @@ import { Client } from "@notionhq/client";
 import { parsePlace, type Place } from "./domain/place.js";
 import { createNotionPlace, updateNotionStatus } from "./adapters/notion.js";
 import { createPlaywrightNaverRunner, stageNaverSave } from "./adapters/naver.js";
-import { createOpenAiLinkExtractor } from "./adapters/extract.js";
+import { createGeminiLinkExtractor } from "./adapters/extract.js";
 import { readPublicLink } from "./adapters/public-link.js";
 
 async function loadPlaces(path: string): Promise<Place[]> {
@@ -27,7 +27,7 @@ async function main(): Promise<void> {
   }
   if (command === "extract") {
     const evidence = await readPublicLink(file);
-    const extracted = await createOpenAiLinkExtractor(requiredEnv("OPENAI_API_KEY")).extract(file, evidence);
+    const extracted = await createGeminiLinkExtractor(requiredEnv("GEMINI_API_KEY")).extract(file, evidence);
     // Without a verified map API result, extraction is always a review artifact, never a save-ready record.
     const results = extracted.map((item) => ({ ...item, status: "검토 필요" as const, extractionReason: `${item.extractionReason} / 공개 정보와 AI 추출 결과이므로 사람 검토가 필요합니다.` }));
     const json = JSON.stringify(results, null, 2);
