@@ -6,7 +6,6 @@ import { createNotionPlace, updateNotionStatus } from "./adapters/notion.js";
 import { createPlaywrightNaverRunner, stageNaverSave } from "./adapters/naver.js";
 import { createOpenAiLinkExtractor } from "./adapters/extract.js";
 import { readPublicLink } from "./adapters/public-link.js";
-import { verifyWithNaverLocal } from "./adapters/naver-search.js";
 
 async function loadPlaces(path: string): Promise<Place[]> {
   const input: unknown = JSON.parse(await readFile(path, "utf8"));
@@ -29,14 +28,8 @@ async function main(): Promise<void> {
   if (command === "extract") {
     const evidence = await readPublicLink(file);
     const extracted = await createOpenAiLinkExtractor(requiredEnv("OPENAI_API_KEY")).extract(file, evidence);
-    const naverId = process.env.NAVER_SEARCH_CLIENT_ID;
-    const naverSecret = process.env.NAVER_SEARCH_CLIENT_SECRET;
-    const results = naverId && naverSecret
-      ? await Promise.all(extracted.map(async (item) => {
-          const verified = await verifyWithNaverLocal(item, naverId, naverSecret);
-          return { ...verified.place, confidence: item.confidence, extractionReason: `${item.extractionReason} / ${verified.reason}` };
-        }))
-      : extracted.map((item) => ({ ...item, status: "검토 필요" as const, extractionReason: `${item.extractionReason} / 네이버 지역검색 API 키가 없어 자동 검증하지 않았습니다.` }));
+    // Without a verified map API result, extraction is always a review artifact, never a save-ready record.
+    const results = extracted.map((item) => ({ ...item, status: "검토 필요" as const, extractionReason: `${item.extractionReason} / 공개 정보와 AI 추출 결과이므로 사람 검토가 필요합니다.` }));
     const json = JSON.stringify(results, null, 2);
     const outIndex = flags.indexOf("--out");
     if (outIndex >= 0) {
