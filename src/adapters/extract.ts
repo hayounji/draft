@@ -28,7 +28,7 @@ export function createGeminiLinkExtractor(apiKey: string): LinkExtractor {
     async extract(url, evidence) {
       const signals = evidence ? JSON.stringify(evidence) : "No direct metadata was available.";
       const prompt = `The user explicitly submitted this public SNS or web URL: ${url}\nStructured signals collected from that exact URL: ${signals}\nUse only publicly accessible content from the submitted page; do not log in, bypass any restriction, or infer unavailable text. Prioritize an explicit map URL, geotag/place information, then venue mentions. Extract every explicitly named visitable venue and useful Korean keywords (menu, neighborhood, theme: e.g. 팬케이크, 성수동). A direct map URL may be copied into mapUrl. If content is inaccessible or a venue/category is ambiguous, return a single low-confidence candidate only when a name is explicitly present; otherwise return an empty list. Return ONLY a JSON object with this exact shape and no Markdown: {"places":[{"name":"string","region":"string optional","majorCategory":"음식|장소","primaryCategory":"식당|카페|술집|소품샵|전시|팝업","secondaryCategory":"string optional","alcoholTags":["string"],"keywords":["string"],"mapUrl":"URL optional","confidence":"high|low","reason":"string"}]}.`;
-      const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+      const model = process.env.GEMINI_MODEL ?? "gemini-3.5-flash";
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: "POST", headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], tools: [{ url_context: {} }, { google_search: {} }] })
