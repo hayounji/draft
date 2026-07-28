@@ -1,16 +1,17 @@
 import { z } from "zod";
 import { parsePlace, type Place } from "../domain/place.js";
+import type { PublicLinkEvidence } from "./public-link.js";
 
 const extractedPlace = z.object({
   name: z.string().min(1), region: z.string().min(1).optional(), majorCategory: z.enum(["음식", "장소"]),
   primaryCategory: z.enum(["식당", "카페", "술집", "소품샵", "전시", "팝업"]), secondaryCategory: z.string().optional(),
   alcoholTags: z.array(z.enum(["소주", "맥주", "막걸리", "와인", "칵테일", "위스키", "사케", "하이볼", "고량주"])).default([]),
-  keywords: z.array(z.string()).default([]), confidence: z.enum(["high", "low"]), reason: z.string().min(1)
+  keywords: z.array(z.string()).default([]), mapUrl: z.string().url().optional(), confidence: z.enum(["high", "low"]), reason: z.string().min(1)
 });
 const extractionSchema = z.object({ places: z.array(extractedPlace) });
 
 export type ExtractedPlace = Place & { confidence: "high" | "low"; extractionReason: string };
-export interface LinkExtractor { extract(url: string): Promise<ExtractedPlace[]>; }
+export interface LinkExtractor { extract(url: string, evidence?: PublicLinkEvidence): Promise<ExtractedPlace[]>; }
 
 function responseText(response: { output?: Array<{ content?: Array<{ type?: string; text?: string }> }> }): string {
   return response.output?.flatMap((item) => item.content ?? []).filter((item) => item.type === "output_text").map((item) => item.text ?? "").join("") ?? "";
@@ -24,8 +25,9 @@ function jsonFromModelText(text: string): unknown {
 /** Reads only the user-submitted URL through OpenAI web search. It never supplies credentials or retries blocked content. */
 export function createOpenAiLinkExtractor(apiKey: string): LinkExtractor {
   return {
-    async extract(url) {
-      const prompt = `The user explicitly submitted this public SNS URL: ${url}\nUse only publicly accessible content from that exact post; do not log in, bypass any restriction, or infer unavailable text. Extract every explicitly named venue, plus useful Korean keywords (menu, neighborhood, theme: e.g. 팬케이크, 성수동). If content is inaccessible or a venue/category is ambiguous, return a single low-confidence candidate only when a name is explicitly present; otherwise return an empty list. Return ONLY a JSON object with this exact shape and no Markdown: {"places":[{"name":"string","region":"string optional","majorCategory":"음식|장소","primaryCategory":"식당|카페|술집|소품샵|전시|팝업","secondaryCategory":"string optional","alcoholTags":["string"],"keywords":["string"],"confidence":"high|low","reason":"string"}]}.`;
+    async extract(url, evidence) {
+      const signals = evidence ? JSON.stringify(evidence) : "No direct metadata was available.";
+      const prompt = `The user explicitly submitted this public SNS or web URL: ${url}\nStructured signals collected from that exact URL: ${signals}\nUse only publicly accessible content from the submitted page; do not log in, bypass any restriction, or infer unavailable text. Prioritize an explicit map URL, geotag/place information, then venue mentions. Extract every explicitly named visitable venue and useful Korean keywords (menu, neighborhood, theme: e.g. 팬케이크, 성수동). A direct map URL may be copied into mapUrl. If content is inaccessible or a venue/category is ambiguous, return a single low-confidence candidate only when a name is explicitly present; otherwise return an empty list. Return ONLY a JSON object with this exact shape and no Markdown: {"places":[{"name":"string","region":"string optional","majorCategory":"음식|장소","primaryCategory":"식당|카페|술집|소품샵|전시|팝업","secondaryCategory":"string optional","alcoholTags":["string"],"keywords":["string"],"mapUrl":"URL optional","confidence":"high|low","reason":"string"}]}.`;
       const res = await fetch("https://api.openai.com/v1/responses", {
         method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({ model: "gpt-5-mini", tools: [{ type: "web_search" }], input: prompt })

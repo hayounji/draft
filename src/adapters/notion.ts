@@ -8,7 +8,7 @@ export function toNotionProperties(place: Place) {
     "1차 카테고리": { select: { name: place.primaryCategory } },
     "2차 카테고리": { select: place.secondaryCategory ? { name: place.secondaryCategory } : null },
     "주류 태그": { multi_select: place.alcoholTags.map((name) => ({ name })) },
-    "키워드": { multi_select: place.keywords.map((name) => ({ name })) }, "상태": { select: { name: place.status } }
+    "키워드": { multi_select: place.keywords.map((name) => ({ name })) }, "지도 링크": { url: place.mapUrl ?? null }, "상태": { select: { name: place.status } }
   };
 }
 

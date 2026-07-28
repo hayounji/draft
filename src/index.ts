@@ -5,6 +5,8 @@ import { parsePlace, type Place } from "./domain/place.js";
 import { createNotionPlace, updateNotionStatus } from "./adapters/notion.js";
 import { createPlaywrightNaverRunner, stageNaverSave } from "./adapters/naver.js";
 import { createOpenAiLinkExtractor } from "./adapters/extract.js";
+import { readPublicLink } from "./adapters/public-link.js";
+import { verifyWithNaverLocal } from "./adapters/naver-search.js";
 
 async function loadPlaces(path: string): Promise<Place[]> {
   const input: unknown = JSON.parse(await readFile(path, "utf8"));
@@ -25,7 +27,16 @@ async function main(): Promise<void> {
     throw new Error("사용법: place <extract|validate|create-notion|save-naver> <URL 또는 places.json> [--out places.json] [--confirm]");
   }
   if (command === "extract") {
-    const results = await createOpenAiLinkExtractor(requiredEnv("OPENAI_API_KEY")).extract(file);
+    const evidence = await readPublicLink(file);
+    const extracted = await createOpenAiLinkExtractor(requiredEnv("OPENAI_API_KEY")).extract(file, evidence);
+    const naverId = process.env.NAVER_SEARCH_CLIENT_ID;
+    const naverSecret = process.env.NAVER_SEARCH_CLIENT_SECRET;
+    const results = naverId && naverSecret
+      ? await Promise.all(extracted.map(async (item) => {
+          const verified = await verifyWithNaverLocal(item, naverId, naverSecret);
+          return { ...verified.place, confidence: item.confidence, extractionReason: `${item.extractionReason} / ${verified.reason}` };
+        }))
+      : extracted.map((item) => ({ ...item, status: "검토 필요" as const, extractionReason: `${item.extractionReason} / 네이버 지역검색 API 키가 없어 자동 검증하지 않았습니다.` }));
     const json = JSON.stringify(results, null, 2);
     const outIndex = flags.indexOf("--out");
     if (outIndex >= 0) {

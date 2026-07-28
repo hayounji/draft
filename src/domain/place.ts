@@ -8,7 +8,7 @@ export const statuses = ["검증 완료 · 지도 저장 대기", "지도 저장
 export type Place = {
   name: string; sourceUrl: string; region?: string; majorCategory: (typeof majorCategories)[number];
   primaryCategory: (typeof primaryCategories)[number]; secondaryCategory?: string;
-  alcoholTags: (typeof alcoholTags)[number][]; keywords: string[]; status: (typeof statuses)[number]; notionPageId?: string;
+  alcoholTags: (typeof alcoholTags)[number][]; keywords: string[]; mapUrl?: string; status: (typeof statuses)[number]; notionPageId?: string;
 };
 
 const allowed: Record<Place["primaryCategory"], { major: Place["majorCategory"]; secondary: readonly string[] }> = {
@@ -25,6 +25,7 @@ const rawPlace = z.object({
   majorCategory: z.enum(majorCategories), primaryCategory: z.enum(primaryCategories),
   secondaryCategory: z.string().trim().min(1).optional(), alcoholTags: z.array(z.enum(alcoholTags)).default([]),
   keywords: z.array(z.string().trim().min(1)).default([]),
+  mapUrl: z.string().url().optional(),
   status: z.enum(statuses).default("검증 완료 · 지도 저장 대기"), notionPageId: z.string().min(1).optional()
 });
 
